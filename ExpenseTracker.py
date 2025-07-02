@@ -1,65 +1,56 @@
+import streamlit as st
 import datetime
 
-expenses = []
+# Initialize session state to store expenses
+if 'expenses' not in st.session_state:
+    st.session_state.expenses = []
 
-def add_expense():
-    category = input("Enter category (e.g., Food, Travel, Shopping): ")
-    amount = float(input("Enter amount: ₹"))
-    date = datetime.date.today()
-    expenses.append({"category": category, "amount": amount, "date": date})
-    print("✅ Expense added successfully!")
+st.set_page_config(page_title="💸 Expense Tracker", layout="centered")
+st.title("💸 Expense Tracker")
+st.write("Track your daily expenses with ease!")
 
-def view_expenses():
-    if not expenses:
-        print("No expenses recorded yet.")
-        return
-    print("\n--- All Expenses ---")
-    for exp in expenses:
-        print(f"{exp['date']} - {exp['category']}: ₹{exp['amount']}")
+# --- Add Expense ---
+st.header("➕ Add Expense")
+with st.form("expense_form"):
+    category = st.text_input("Category (e.g., Food, Travel, Shopping)")
+    amount = st.number_input("Amount (₹)", min_value=0.0, format="%.2f")
+    submitted = st.form_submit_button("Add")
+    if submitted and category:
+        expense = {
+            "category": category,
+            "amount": amount,
+            "date": datetime.date.today()
+        }
+        st.session_state.expenses.append(expense)
+        st.success("✅ Expense added successfully!")
 
-def total_by_category():
-    if not expenses:
-        print("No expenses to summarize.")
-        return
+# --- View All Expenses ---
+st.header("📋 All Expenses")
+if st.session_state.expenses:
+    for exp in st.session_state.expenses:
+        st.write(f"• {exp['date']} - {exp['category']}: ₹{exp['amount']}")
+else:
+    st.info("No expenses recorded yet.")
+
+# --- Total by Category ---
+st.header("📊 Total by Category")
+if st.session_state.expenses:
     totals = {}
-    for exp in expenses:
-        cat = exp['category']
-        totals[cat] = totals.get(cat, 0) + exp['amount']
-    print("\n--- Total by Category ---")
+    for exp in st.session_state.expenses:
+        totals[exp['category']] = totals.get(exp['category'], 0) + exp['amount']
     for cat, total in totals.items():
-        print(f"{cat}: ₹{total}")
+        st.write(f"**{cat}**: ₹{total:.2f}")
+else:
+    st.info("No expenses to summarize.")
 
-def filter_expenses():
-    limit = float(input("Show expenses greater than ₹: "))
-    filtered = [e for e in expenses if e["amount"] > limit]
-    if not filtered:
-        print(f"No expenses found over ₹{limit}.")
-        return
-    print(f"\n--- Expenses Over ₹{limit} ---")
-    for e in filtered:
-        print(f"{e['date']} - {e['category']}: ₹{e['amount']}")
-
-# Main Program Loop
-while True:
-    print("\n📊 --- Expense Tracker ---")
-    print("1. Add Expense")
-    print("2. View All Expenses")
-    print("3. View Total by Category")
-    print("4. Filter Expenses")
-    print("5. Exit")
-
-    choice = input("Choose an option (1–5): ")
-
-    if choice == '1':
-        add_expense()
-    elif choice == '2':
-        view_expenses()
-    elif choice == '3':
-        total_by_category()
-    elif choice == '4':
-        filter_expenses()
-    elif choice == '5':
-        print("👋 Exiting Expense Tracker. Stay mindful with your money!")
-        break
+# --- Filter Expenses ---
+st.header("🔎 Filter Expenses")
+if st.session_state.expenses:
+    limit = st.number_input("Show expenses greater than ₹", min_value=0.0, format="%.2f", key="filter_input")
+    filtered = [e for e in st.session_state.expenses if e["amount"] > limit]
+    if filtered:
+        st.subheader(f"Expenses over ₹{limit}")
+        for e in filtered:
+            st.write(f"• {e['date']} - {e['category']}: ₹{e['amount']}")
     else:
-        print("❌ Invalid choice. Please try again.")
+        st.warning(f"No expenses found over ₹{limit}")
