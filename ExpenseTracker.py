@@ -18,46 +18,24 @@ st.markdown("""
 /* Interactive button styling */
 .stButton button,.stDownloadButton button,
 [data-testid="stFormSubmitButton"] button{
-    border-radius:12px!important;
-    font-weight:700!important;
-    min-height:42px!important;
-    transition:all .18s ease!important;
-    box-shadow:0 4px 12px rgba(15,23,42,.10)!important;
-    border:1px solid rgba(148,163,184,.35)!important;
-    cursor:pointer!important;
+    border-radius:12px!important;font-weight:700!important;min-height:42px!important;
+    transition:all .18s ease!important;box-shadow:0 4px 12px rgba(15,23,42,.10)!important;
+    border:1px solid rgba(148,163,184,.35)!important;cursor:pointer!important;
 }
 .stButton button:hover,.stDownloadButton button:hover,
-[data-testid="stFormSubmitButton"] button:hover{
-    transform:translateY(-2px)!important;
-    box-shadow:0 8px 20px rgba(15,23,42,.18)!important;
-    border-color:#6366f1!important;
-}
+[data-testid="stFormSubmitButton"] button:hover{transform:translateY(-2px)!important;box-shadow:0 8px 20px rgba(15,23,42,.18)!important;border-color:#6366f1!important}
 .stButton button:active,.stDownloadButton button:active,
-[data-testid="stFormSubmitButton"] button:active{
-    transform:translateY(1px) scale(.97)!important;
-    box-shadow:0 2px 6px rgba(15,23,42,.12)!important;
-}
+[data-testid="stFormSubmitButton"] button:active{transform:translateY(1px) scale(.97)!important;box-shadow:0 2px 6px rgba(15,23,42,.12)!important}
 .stButton button:focus-visible,.stDownloadButton button:focus-visible,
-[data-testid="stFormSubmitButton"] button:focus-visible{
-    outline:3px solid rgba(99,102,241,.28)!important;
-    outline-offset:2px!important;
-}
-/* Primary action button */
-[data-testid="stFormSubmitButton"] button[kind="primary"]{
-    background:linear-gradient(135deg,#6366f1,#8b5cf6)!important;
-    color:white!important;
-    border:none!important;
-}
-[data-testid="stFormSubmitButton"] button[kind="primary"]:hover{
-    background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;
-}
-/* Segmented control interaction */
+[data-testid="stFormSubmitButton"] button:focus-visible{outline:3px solid rgba(99,102,241,.28)!important;outline-offset:2px!important}
+[data-testid="stFormSubmitButton"] button[kind="primary"]{background:linear-gradient(135deg,#6366f1,#8b5cf6)!important;color:white!important;border:none!important}
+[data-testid="stFormSubmitButton"] button[kind="primary"]:hover{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important}
 [data-testid="stSegmentedControl"] button{transition:all .18s ease!important}
 [data-testid="stSegmentedControl"] button:hover{transform:translateY(-1px)!important}
-/* Download button */
 .stDownloadButton button{background:white!important;color:#374151!important}
-/* Delete button */
-[data-testid="stExpander"] .stButton button:hover{border-color:#ef4444!important;color:#dc2626!important}
+/* Red delete buttons */
+.delete-row button{background:#fff1f2!important;color:#dc2626!important;border-color:#fecdd3!important}
+.delete-row button:hover{background:#dc2626!important;color:white!important;border-color:#dc2626!important}
 </style>
 """, unsafe_allow_html=True)
 
@@ -73,6 +51,9 @@ conn=get_connection()
 
 def load_expenses():
     return pd.read_sql_query("SELECT id,expense_date,category,description,amount FROM expenses ORDER BY expense_date DESC,id DESC",conn)
+
+def delete_expense(expense_id):
+    conn.execute("DELETE FROM expenses WHERE id=?",(expense_id,)); conn.commit()
 
 with st.sidebar:
     st.markdown("# 💸 Expense Tracker")
@@ -91,7 +72,6 @@ with st.sidebar:
     st.caption("Set your target monthly spending limit.")
 
 df=load_expenses()
-
 today=date.today()
 total=float(df.amount.sum()) if not df.empty else 0
 month_start=today.replace(day=1)
@@ -101,7 +81,6 @@ remaining=max(budget-month_total,0)
 progress=min(month_total/budget,1) if budget>0 else 0
 
 st.markdown('<div class="hero"><h1>💸 Your Money Dashboard</h1><p>Track spending, understand habits and stay within your budget.</p></div>',unsafe_allow_html=True)
-
 c=st.columns(4)
 for col,label,value in zip(c,["💰 Total Spent","📅 This Month","🎯 Budget Left","🧾 Transactions"],[f"₹{total:,.2f}",f"₹{month_total:,.2f}",f"₹{remaining:,.2f}",f"{len(df):,}"]):
     with col: st.markdown(f'<div class="card"><div class="label">{label}</div><div class="value">{value}</div></div>',unsafe_allow_html=True)
@@ -117,11 +96,9 @@ st.caption(f"{status} • ₹{month_total:,.2f} of ₹{budget:,.2f} used ({progr
 st.markdown('<div class="section">📊 Expense Analytics</div>',unsafe_allow_html=True)
 period=st.segmented_control("View by",["Daily","Weekly","Monthly","Yearly"],default="Monthly")
 if period is None: period="Monthly"
-
 chart_df=df.copy(); chart_df["expense_date"]=pd.to_datetime(chart_df["expense_date"])
 if period=="Daily":
-    start=today-timedelta(days=29); chart_df=chart_df[chart_df.expense_date.dt.date>=start]; chart_df["Period"]=chart_df.expense_date.dt.strftime("%d %b")
-    grouped=chart_df.groupby("expense_date",as_index=False).amount.sum().sort_values("expense_date"); grouped["Period"]=grouped.expense_date.dt.strftime("%d %b")
+    start=today-timedelta(days=29); chart_df=chart_df[chart_df.expense_date.dt.date>=start]; grouped=chart_df.groupby("expense_date",as_index=False).amount.sum().sort_values("expense_date"); grouped["Period"]=grouped.expense_date.dt.strftime("%d %b")
 elif period=="Weekly":
     chart_df["Period"]=chart_df.expense_date.dt.to_period("W").apply(lambda x:x.start_time); grouped=chart_df.groupby("Period",as_index=False).amount.sum().sort_values("Period"); grouped["Period"]=grouped.Period.dt.strftime("%d %b")
 elif period=="Yearly":
@@ -162,15 +139,24 @@ with ins[2]:
     text="No previous-month data" if change is None else (f"↑ {change:.1f}% vs last month" if change>0 else f"↓ {abs(change):.1f}% vs last month")
     st.markdown(f'<div class="insight">🔄 <b>Monthly comparison</b><br>{text}<br><small>Previous: ₹{prev_total:,.2f}</small></div>',unsafe_allow_html=True)
 
+# Recent transactions with a visible delete button on every row
 st.markdown('<div class="section">🧾 Recent Transactions</div>',unsafe_allow_html=True)
-display=df.head(15).copy(); display["amount"]=display.amount.map(lambda x:f"₹{x:,.2f}"); display=display.rename(columns={"expense_date":"Date","category":"Category","description":"Description","amount":"Amount"})
-st.dataframe(display[["Date","Category","Description","Amount"]],use_container_width=True,hide_index=True,height=380)
-st.download_button("⬇️ Export CSV",df.to_csv(index=False).encode("utf-8"),"expenses.csv","text/csv")
+st.markdown("<div style='color:#6b7280;font-size:.85rem;margin-bottom:8px'>Click 🗑️ Delete on any transaction to remove it.</div>",unsafe_allow_html=True)
+header=st.columns([1.2,1.3,2.5,1.3,.8])
+for col,text in zip(header,["Date","Category","Description","Amount","Action"]):
+    col.markdown(f"**{text}**")
 
-with st.expander("⚙️ Manage Expenses"):
-    options={f"#{r.id} • {r.expense_date} • {r.category} • ₹{r.amount:,.2f}":int(r.id) for r in df.itertuples()}
-    selected=st.selectbox("Select transaction to delete",list(options))
-    if st.button("Delete Selected Expense"):
-        conn.execute("DELETE FROM expenses WHERE id=?",(options[selected],)); conn.commit(); st.success("Expense deleted."); st.rerun()
+for row in df.head(15).itertuples():
+    cols=st.columns([1.2,1.3,2.5,1.3,.8])
+    cols[0].write(row.expense_date)
+    cols[1].write(row.category)
+    cols[2].write(row.description or "—")
+    cols[3].write(f"₹{row.amount:,.2f}")
+    if cols[4].button("🗑️",key=f"delete_{row.id}",help=f"Delete expense #{row.id}",type="secondary"):
+        delete_expense(int(row.id))
+        st.toast("Expense deleted successfully!",icon="🗑️")
+        st.rerun()
+
+st.download_button("⬇️ Export CSV",df.to_csv(index=False).encode("utf-8"),"expenses.csv","text/csv")
 
 st.markdown("<br><center><small>Expense Tracker • Built with Streamlit • Spend smarter 💸</small></center>",unsafe_allow_html=True)
