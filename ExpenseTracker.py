@@ -14,7 +14,50 @@ st.markdown("""
 .hero{background:linear-gradient(135deg,#111827,#374151);padding:28px 32px;border-radius:22px;color:white;margin-bottom:22px;box-shadow:0 10px 28px #00000014}.hero h1{margin:0;color:white}.hero p{color:#d1d5db;margin:6px 0 0}
 .card{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:19px;box-shadow:0 5px 18px #0f172a0b;min-height:115px}.label{font-size:.82rem;color:#6b7280;font-weight:650}.value{font-size:1.55rem;color:#111827;font-weight:750;margin-top:7px}.good{color:#15803d}.warn{color:#b45309}.bad{color:#dc2626}
 .section{font-size:1.18rem;font-weight:750;color:#111827;margin:20px 0 12px}.insight{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:15px 17px;height:100%}
-.stButton button,.stDownloadButton button{border-radius:10px;font-weight:650}
+
+/* Interactive button styling */
+.stButton button,.stDownloadButton button,
+[data-testid="stFormSubmitButton"] button{
+    border-radius:12px!important;
+    font-weight:700!important;
+    min-height:42px!important;
+    transition:all .18s ease!important;
+    box-shadow:0 4px 12px rgba(15,23,42,.10)!important;
+    border:1px solid rgba(148,163,184,.35)!important;
+    cursor:pointer!important;
+}
+.stButton button:hover,.stDownloadButton button:hover,
+[data-testid="stFormSubmitButton"] button:hover{
+    transform:translateY(-2px)!important;
+    box-shadow:0 8px 20px rgba(15,23,42,.18)!important;
+    border-color:#6366f1!important;
+}
+.stButton button:active,.stDownloadButton button:active,
+[data-testid="stFormSubmitButton"] button:active{
+    transform:translateY(1px) scale(.97)!important;
+    box-shadow:0 2px 6px rgba(15,23,42,.12)!important;
+}
+.stButton button:focus-visible,.stDownloadButton button:focus-visible,
+[data-testid="stFormSubmitButton"] button:focus-visible{
+    outline:3px solid rgba(99,102,241,.28)!important;
+    outline-offset:2px!important;
+}
+/* Primary action button */
+[data-testid="stFormSubmitButton"] button[kind="primary"]{
+    background:linear-gradient(135deg,#6366f1,#8b5cf6)!important;
+    color:white!important;
+    border:none!important;
+}
+[data-testid="stFormSubmitButton"] button[kind="primary"]:hover{
+    background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;
+}
+/* Segmented control interaction */
+[data-testid="stSegmentedControl"] button{transition:all .18s ease!important}
+[data-testid="stSegmentedControl"] button:hover{transform:translateY(-1px)!important}
+/* Download button */
+.stDownloadButton button{background:white!important;color:#374151!important}
+/* Delete button */
+[data-testid="stExpander"] .stButton button:hover{border-color:#ef4444!important;color:#dc2626!important}
 </style>
 """, unsafe_allow_html=True)
 
@@ -97,7 +140,6 @@ with right:
     fig2.update_layout(height=390,margin=dict(l=10,r=10,t=55,b=10),showlegend=True)
     st.plotly_chart(fig2,use_container_width=True)
 
-# Trend and insights
 st.markdown('<div class="section">📈 Spending Trend</div>',unsafe_allow_html=True)
 daily=df.copy(); daily["expense_date"]=pd.to_datetime(daily.expense_date); daily=daily.groupby("expense_date",as_index=False).amount.sum().sort_values("expense_date")
 fig3=px.line(daily,x="expense_date",y="amount",markers=True,title="Daily Spending Trend",labels={"expense_date":"Date","amount":"Amount (₹)"})
